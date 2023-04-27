@@ -1,0 +1,561 @@
+ root to create Tkinter object
+root = Tk()
+root.title("Email Application") # set title of window.
+
+# setting up the first frame
+f1 = Frame(root, width=10000, height=8000)
+f1.pack(side=TOP)
+
+# a label to show message to user about enter credentials
+credential = Label(f1, text="Enter Your Credentials", font="Ariel")
+credential.grid(row=0, columnspan=3, pady=80, padx=150)
+
+# labels of email and password
+email = Label(f1, text="Email").grid(row=1, sticky=E, pady=5, padx=10)
+password = Label(f1, text="Password").grid(row=2, sticky=E, pady=5, padx=10)
+
+# entry field of email
+emailEntry = Entry(f1)
+# entry field of password, hide password with * in input field
+passEntry = Entry(f1, show="*") 
+
+emailEntry.grid(row=1, column=1, pady=5)
+passEntry.grid(row=2, column=1)
+
+# Button for login the user
+loginBtn = Button(f1, text="Login", width=10, bg="black", fg="white", command=lambda: login())
+loginBtn.grid(row=3, columnspan=3, pady=10)
+Note: Comments are there in code for details
+
+In the Second and Third Frames (we are going to merge them into one window). In the second frame, we have one label (Logged In!) which shows the “logged in” message, and we have one button (“logout”) to log out the user. In the third frame, we have four labels (“Compose Email”, “To”, “Subject”, “Message”), three input fields (“To Entry”, “Subject Entry”, “Message Entry”), and in last we have one button (“Send Email”).
+
+
+Second + Third Frame
+Code for Second Frame
+# frame 2
+f2 = Frame(root)
+f2.pack(side=TOP, expand=NO, fill=NONE)
+
+# label field to show message of error or success
+loginSuccessful = Label(f2, width=20, bg="cyan", fg="red", text="Log in Success", font="Ariel")
+loginSuccessful.grid(row=0, column=0, columnspan=2, pady=5)
+
+# logout button
+logoutBtn = Button(f2, text="Logout", bg="black", fg="white", command=lambda: logout())
+logoutBtn.grid(row=0, column=4, sticky=E, pady=10, padx=(5, 0))
+Code for Third Frame
+# frame 3
+f3 = Frame(root)
+f3.pack(side=TOP, expand=NO, fill=NONE)
+
+# Message to user about compose email
+composeEmail = Label(f3, width=20, text="Compose Email", font="Ariel")
+composeEmail.grid(row=0, columnspan=3, pady=10)
+
+# To, Subject, and message labels
+to = Label(f3, text="To").grid(row=1, sticky=E, pady=5)
+subject = Label(f3, text="Subject").grid(row=2, sticky=E, pady=5)
+message = Label(f3, text="Message").grid(row=3, sticky=E)
+
+# input fields for To, Subject, and message
+toEntry = Entry(f3)
+subjectEntry = Entry(f3)
+messageEntry = Entry(f3)
+
+toEntry.grid(row=1, column=1, pady=5)
+subjectEntry.grid(row=2, column=1, pady=5)
+messageEntry.grid(row=3, column=1, pady=5, rowspan=3, ipady=10)
+
+# send button to send email at the destination
+sendEmailBtn = Button(f3, text="Send Email", width=10, bg="black", fg="white", command=lambda: send_email())
+sendEmailBtn.grid(row=6, columnspan=3, pady=10)
+
+# message if email successfully sent, otherwise error
+sendSuccessful = Label(f3, width=20, fg="white", bg="black", font="Ariel")
+sendSuccessful.grid(row=7, columnspan=3, pady=5)
+
+# call function to hide login info
+hide_login_label()
+
+# GUI not killed -> run it in loop
+mainloop()
+Note: Comments are there in code for details
+
+In the above GUI, we have used Six Functions (login, hide_login_label, send_email, logout, validate_login, validate_message), let's write code for them one by one and understand their functionality.
+
+Valide_Login( ) Method
+In this method, firstly we will read the email and password from entry fields, and check these fields are not empty. After that we will check for valid email, using regular expression of email. If both (not empty, valid)above cases are true, then we return true.
+
+def validate_login():
+    # read email and password from entry of GUI
+    email_text = str(emailEntry.get())
+    pass_text = str(passEntry.get())
+
+    # check if fields are empty -> return False
+    if (email_text == "") or (pass_text == ""):
+        f2.pack()
+        loginSuccessful.grid()
+        # give proper response to user.
+        loginSuccessful["text"] = "Fill all the Fields"
+        logoutBtn.grid_remove()
+        root.after(10, root.grid)
+        # return False, because fields are empty.
+        return False
+
+    else:
+        # get email regex and compile it
+        email_regex = re.compile(r"[^@\s]+@[^@\s]+\.[a-zA-Z0-9]+$")
+        # check if email_text is not a valid email address -> return False
+        if not email_regex.match(email_text):
+            f2.pack()
+            loginSuccessful.grid()
+            # give proper response to user.
+            loginSuccessful["text"] = "Enter a valid Email Address"
+            logoutBtn.grid_remove()
+            root.after(10, root.grid)
+            # return False, because email format is invalid.
+            return False
+
+        # finally return true if both above cases are not True.
+        else:
+            return True
+Note: Comments are there in code for details
+
+Login( ) Method
+In this function, firstly we valid the email and password fields using the validate_login() method. After that, we read the username and password from the entry fields of our GUI. Now make an object of smtplib, and connect with the SMTP server that is running on our machine with default configuration (host = smtp.gmail.com, port = 587). Now login to the server with our credentials (username, password). In the last (on successful login) send a message to the user of login successfully.
+
+def login():
+    if validate_login():
+        global username
+        global password
+
+        # read credentials from GUI input fields.
+        username = str(passEntry.get())
+        password = str(passEntry.get())
+
+        global server
+        # make a smtplib object
+        server = smtplib.SMTP("smtp.gmail.com:587")
+        # connect with default SMTP server running on our machine.
+        server.ehlo()
+        # make secure connection
+        server.starttls()
+        # login to the server
+        server.login(username, password)
+        f2.pack()
+        logoutBtn.grid()
+        # send Logged In message to the user on GUI.
+        loginSuccessful["text"] = "Logged In!"
+        root.after(10, root.grid)
+        f1.pack_forget()
+        root.after(10, root.grid)
+        f3.pack()
+
+        # removing username and password fields.
+        sendSuccessful.grid_remove()
+        root.after(10, root.grid)
+Note: Comments are there in code for details
+
+Validate_Message( ) Method:
+Before sending the email to the recipient, firstly we need to validate the message. In this function, first of all, we read recipient email, subject, and message body from the entry fields. After that, we check that none of them (email, subject, body) is empty, then we check for the valid email using email regular expression.
+
+def validate_message():
+    # read values from entry fields.
+    email_text = str(toEntry.get())
+    sub_text = str(subjectEntry.get())
+    msg_text = str(messageEntry.get())
+
+    # check if email are subject text is empty
+    if (email_text == "") or (sub_text == "") or (msg_text == ""):
+        sendSuccessful.grid()
+        sendSuccessful["text"] = "Fill in all the Fields"
+        root.after(10, root.grid)
+        return False
+    else:
+        # check if email is in correct format
+        EMAIL_REGEX = re.compile(r"[^@\s]+@[^@\s]+\.[a-zA-Z0-9]+$")
+        if not EMAIL_REGEX.match(email_text):
+            f2.pack()
+            sendSuccessful.grid()
+            sendSuccessful["text"] = "Enter a valid Email Address"
+            root.after(10, root.grid)
+            return False
+        else: # if all goods -> return True
+            return True
+Send_Email( ) Method:
+In this function, we send the email to our recipient. Firstly we need to validate the email, subject, and body using the validate_message() method. After that read the recipient email, subject, and body from the entry field. Now make a message string by combining the username, receiver, subject, and body. In last send the message using the sendmail() method of smtplib.
+
+def send_email():
+    # validate message email
+    if validate_message():
+        sendSuccessful.grid_remove()
+        root.after(10, root.grid)
+        # read fields from entry fields.
+        receiver = str(toEntry.get())
+        subject = str(subjectEntry.get())
+        msgbody = str(messageEntry.get())
+        
+        # make message string by combining.
+        msg = "From: " + username + "\n" + "To: " + receiver + "\n" + "Subject: " + subject + "\n" + msgbody
+
+        try:
+            # send email method
+            server.sendmail(username, receiver, msg)
+            sendSuccessful.grid()
+            # show success message to the user.
+            sendSuccessful["text"] = "Mail Sent!"
+            root.after(10, sendSuccessful.grid)
+        except Exception as e:
+            # in case of exception -> show failure message.
+            sendSuccessful.grid()
+            sendSuccessful["text"] = "Error in Sending Your Email"
+            root.after(10, root.grid)
+Note: Comments are there in code for details
+
+Logout( ) Method:
+In this function, we simply quit the connection with the SMTP server using the quit() method. In the last display message of successful log out and end the program.
+
+def logout():
+    try:
+        # off the server
+        server.quit()
+        f3.pack_forget()
+        f2.pack()
+        loginSuccessful.grid()
+        # display message to user
+        loginSuccessful["text"] = "Logged Out Successfully"
+        logoutBtn.grid_remove()
+        f1.pack()
+        # end program
+        passEntry.delete(0, END)
+        root.after(10, root.grid)
+
+    except Exception as e:
+        loginSuccessful["text"] = "Error in Logout"
+Main() Method:
+In the main method, we set up GUI, ask for user inputs (email and password) and log in to the user. Display appropriate message for login success or failure. After successfully logging in, display the compose email and logout window to the user. Now Ask for user input in the subject, receiver_email, and message body and send an email to the receiver id. In last enable the user to log out from the program and terminate the window by displaying the appropriate message.
+
+# root to create Tkinter object
+root = Tk()
+root.title("Email Application")  # set title of window.
+
+# setting up the first frame
+f1 = Frame(root, width=10000, height=8000)
+f1.pack(side=TOP)
+
+# a label to show message to user about enter credentials
+credential = Label(f1, text="Enter Your Credentials", font="Ariel")
+credential.grid(row=0, columnspan=3, pady=80, padx=150)
+
+# labels of email and password
+email = Label(f1, text="Email").grid(row=1, sticky=E, pady=5, padx=10)
+password = Label(f1, text="Password").grid(row=2, sticky=E, pady=5, padx=10)
+
+# entry field of email
+emailEntry = Entry(f1)
+# entry field of password, hide password with * in input field
+passEntry = Entry(f1, show="*")
+
+emailEntry.grid(row=1, column=1, pady=5)
+passEntry.grid(row=2, column=1)
+
+# Button for login the user
+loginBtn = Button(f1, text="Login", width=10, bg="black", fg="white", command=lambda: login())
+loginBtn.grid(row=3, columnspan=3, pady=10)
+
+# frame 2
+f2 = Frame(root)
+f2.pack(side=TOP, expand=NO, fill=NONE)
+
+# label field to show message of error or success
+loginSuccessful = Label(f2, width=20, bg="cyan", fg="red", text="Log in Success", font="Ariel")
+loginSuccessful.grid(row=0, column=0, columnspan=2, pady=5)
+
+# logout button
+logoutBtn = Button(f2, text="Logout", bg="black", fg="white", command=lambda: logout())
+logoutBtn.grid(row=0, column=4, sticky=E, pady=10, padx=(5, 0))
+
+# frame 3
+f3 = Frame(root)
+f3.pack(side=TOP, expand=NO, fill=NONE)
+
+# Message to user about compose email
+composeEmail = Label(f3, width=20, text="Compose Email", font="Ariel")
+composeEmail.grid(row=0, columnspan=3, pady=10)
+
+# To, Subject, and message labels
+to = Label(f3, text="To").grid(row=1, sticky=E, pady=5)
+subject = Label(f3, text="Subject").grid(row=2, sticky=E, pady=5)
+message = Label(f3, text="Message").grid(row=3, sticky=E)
+
+# input fields for To, Subject, and message
+toEntry = Entry(f3)
+subjectEntry = Entry(f3)
+messageEntry = Entry(f3)
+
+toEntry.grid(row=1, column=1, pady=5)
+subjectEntry.grid(row=2, column=1, pady=5)
+messageEntry.grid(row=3, column=1, pady=5, rowspan=3, ipady=10)
+
+# send button to send email at the destination
+sendEmailBtn = Button(f3, text="Send Email", width=10, bg="black", fg="white", command=lambda: send_email())
+sendEmailBtn.grid(row=6, columnspan=3, pady=10)
+
+# message if email successfully sent, otherwise error
+sendSuccessful = Label(f3, width=20, fg="white", bg="black", font="Ariel")
+sendSuccessful.grid(row=7, columnspan=3, pady=5)
+
+# call function to hide login info
+hide_login_label()
+
+# GUI not killed -> run it in loop
+mainloop()
+# frame 2
+f2 = Frame(root)
+f2.pack(side=TOP, expand=NO, fill=NONE)
+
+# label field to show message of error or success
+loginSuccessful = Label(f2, width=20, bg="cyan", fg="red", text="Log in Success", font="Ariel")
+loginSuccessful.grid(row=0, column=0, columnspan=2, pady=5)
+
+# logout button
+logoutBtn = Button(f2, text="Logout", bg="black", fg="white", command=lambda: logout())
+logoutBtn.grid(row=0, column=4, sticky=E, pady=10, padx=(5, 0))
+# frame 3
+f3 = Frame(root)
+f3.pack(side=TOP, expand=NO, fill=NONE)
+
+# Message to user about compose email
+composeEmail = Label(f3, width=20, text="Compose Email", font="Ariel")
+composeEmail.grid(row=0, columnspan=3, pady=10)
+
+# To, Subject, and message labels
+to = Label(f3, text="To").grid(row=1, sticky=E, pady=5)
+subject = Label(f3, text="Subject").grid(row=2, sticky=E, pady=5)
+message = Label(f3, text="Message").grid(row=3, sticky=E)
+
+# input fields for To, Subject, and message
+toEntry = Entry(f3)
+subjectEntry = Entry(f3)
+messageEntry = Entry(f3)
+
+toEntry.grid(row=1, column=1, pady=5)
+subjectEntry.grid(row=2, column=1, pady=5)
+messageEntry.grid(row=3, column=1, pady=5, rowspan=3, ipady=10)
+
+# send button to send email at the destination
+sendEmailBtn = Button(f3, text="Send Email", width=10, bg="black", fg="white", command=lambda: send_email())
+sendEmailBtn.grid(row=6, columnspan=3, pady=10)
+
+# message if email successfully sent, otherwise error
+sendSuccessful = Label(f3, width=20, fg="white", bg="black", font="Ariel")
+sendSuccessful.grid(row=7, columnspan=3, pady=5)
+
+# call function to hide login info
+hide_login_label()
+
+# GUI not killed -> run it in loop
+mainloop()
+def validate_login():
+    # read email and password from entry of GUI
+    email_text = str(emailEntry.get())
+    pass_text = str(passEntry.get())
+
+    # check if fields are empty -> return False
+    if (email_text == "") or (pass_text == ""):
+        f2.pack()
+        loginSuccessful.grid()
+        # give proper response to user.
+        loginSuccessful["text"] = "Fill all the Fields"
+        logoutBtn.grid_remove()
+        root.after(10, root.grid)
+        # return False, because fields are empty.
+        return False
+
+    else:
+        # get email regex and compile it
+        email_regex = re.compile(r"[^@\s]+@[^@\s]+\.[a-zA-Z0-9]+$")
+        # check if email_text is not a valid email address -> return False
+        if not email_regex.match(email_text):
+            f2.pack()
+            loginSuccessful.grid()
+            # give proper response to user.
+            loginSuccessful["text"] = "Enter a valid Email Address"
+            logoutBtn.grid_remove()
+            root.after(10, root.grid)
+            # return False, because email format is invalid.
+            return False
+
+        # finally return true if both above cases are not True.
+        else:
+            return True
+def login():
+    if validate_login():
+        global username
+        global password
+
+        # read credentials from GUI input fields.
+        username = str(passEntry.get())
+        password = str(passEntry.get())
+
+        global server
+        # make a smtplib object
+        server = smtplib.SMTP("smtp.gmail.com:587")
+        # connect with default SMTP server running on our machine.
+        server.ehlo()
+        # make secure connection
+        server.starttls()
+        # login to the server
+        server.login(username, password)
+        f2.pack()
+        logoutBtn.grid()
+        # send Logged In message to the user on GUI.
+        loginSuccessful["text"] = "Logged In!"
+        root.after(10, root.grid)
+        f1.pack_forget()
+        root.after(10, root.grid)
+        f3.pack()
+
+        # removing username and password fields.
+        sendSuccessful.grid_remove()
+        root.after(10, root.grid)
+def validate_message():
+    # read values from entry fields.
+    email_text = str(toEntry.get())
+    sub_text = str(subjectEntry.get())
+    msg_text = str(messageEntry.get())
+
+    # check if email are subject text is empty
+    if (email_text == "") or (sub_text == "") or (msg_text == ""):
+        sendSuccessful.grid()
+        sendSuccessful["text"] = "Fill in all the Fields"
+        root.after(10, root.grid)
+        return False
+    else:
+        # check if email is in correct format
+        EMAIL_REGEX = re.compile(r"[^@\s]+@[^@\s]+\.[a-zA-Z0-9]+$")
+        if not EMAIL_REGEX.match(email_text):
+            f2.pack()
+            sendSuccessful.grid()
+            sendSuccessful["text"] = "Enter a valid Email Address"
+            root.after(10, root.grid)
+            return False
+        else: # if all goods -> return True
+            return True
+def send_email():
+    # validate message email
+    if validate_message():
+        sendSuccessful.grid_remove()
+        root.after(10, root.grid)
+        # read fields from entry fields.
+        receiver = str(toEntry.get())
+        subject = str(subjectEntry.get())
+        msgbody = str(messageEntry.get())
+        
+        # make message string by combining.
+        msg = "From: " + username + "\n" + "To: " + receiver + "\n" + "Subject: " + subject + "\n" + msgbody
+
+        try:
+            # send email method
+            server.sendmail(username, receiver, msg)
+            sendSuccessful.grid()
+            # show success message to the user.
+            sendSuccessful["text"] = "Mail Sent!"
+            root.after(10, sendSuccessful.grid)
+        except Exception as e:
+            # in case of exception -> show failure message.
+            sendSuccessful.grid()
+            sendSuccessful["text"] = "Error in Sending Your Email"
+            root.after(10, root.grid)
+def logout():
+    try:
+        # off the server
+        server.quit()
+        f3.pack_forget()
+        f2.pack()
+        loginSuccessful.grid()
+        # display message to user
+        loginSuccessful["text"] = "Logged Out Successfully"
+        logoutBtn.grid_remove()
+        f1.pack()
+        # end program
+        passEntry.delete(0, END)
+        root.after(10, root.grid)
+
+    except Exception as e:
+        loginSuccessful["text"] = "Error in Logout"
+# root to create Tkinter object
+root = Tk()
+root.title("Email Application")  # set title of window.
+
+# setting up the first frame
+f1 = Frame(root, width=10000, height=8000)
+f1.pack(side=TOP)
+
+# a label to show message to user about enter credentials
+credential = Label(f1, text="Enter Your Credentials", font="Ariel")
+credential.grid(row=0, columnspan=3, pady=80, padx=150)
+
+# labels of email and password
+email = Label(f1, text="Email").grid(row=1, sticky=E, pady=5, padx=10)
+password = Label(f1, text="Password").grid(row=2, sticky=E, pady=5, padx=10)
+
+# entry field of email
+emailEntry = Entry(f1)
+# entry field of password, hide password with * in input field
+passEntry = Entry(f1, show="*")
+
+emailEntry.grid(row=1, column=1, pady=5)
+passEntry.grid(row=2, column=1)
+
+# Button for login the user
+loginBtn = Button(f1, text="Login", width=10, bg="black", fg="white", command=lambda: login())
+loginBtn.grid(row=3, columnspan=3, pady=10)
+
+# frame 2
+f2 = Frame(root)
+f2.pack(side=TOP, expand=NO, fill=NONE)
+
+# label field to show message of error or success
+loginSuccessful = Label(f2, width=20, bg="cyan", fg="red", text="Log in Success", font="Ariel")
+loginSuccessful.grid(row=0, column=0, columnspan=2, pady=5)
+
+# logout button
+logoutBtn = Button(f2, text="Logout", bg="black", fg="white", command=lambda: logout())
+logoutBtn.grid(row=0, column=4, sticky=E, pady=10, padx=(5, 0))
+
+# frame 3
+f3 = Frame(root)
+f3.pack(side=TOP, expand=NO, fill=NONE)
+
+# Message to user about compose email
+composeEmail = Label(f3, width=20, text="Compose Email", font="Ariel")
+composeEmail.grid(row=0, columnspan=3, pady=10)
+
+# To, Subject, and message labels
+to = Label(f3, text="To").grid(row=1, sticky=E, pady=5)
+subject = Label(f3, text="Subject").grid(row=2, sticky=E, pady=5)
+message = Label(f3, text="Message").grid(row=3, sticky=E)
+
+# input fields for To, Subject, and message
+toEntry = Entry(f3)
+subjectEntry = Entry(f3)
+messageEntry = Entry(f3)
+
+toEntry.grid(row=1, column=1, pady=5)
+subjectEntry.grid(row=2, column=1, pady=5)
+messageEntry.grid(row=3, column=1, pady=5, rowspan=3, ipady=10)
+
+# send button to send email at the destination
+sendEmailBtn = Button(f3, text="Send Email", width=10, bg="black", fg="white", command=lambda: send_email())
+sendEmailBtn.grid(row=6, columnspan=3, pady=10)
+
+# message if email successfully sent, otherwise error
+sendSuccessful = Label(f3, width=20, fg="white", bg="black", font="Ariel")
+sendSuccessful.grid(row=7, columnspan=3, pady=5)
+
+# call function to hide login info
+hide_login_label()
+
+# GUI not killed -> run it in loop
+mainloop()
